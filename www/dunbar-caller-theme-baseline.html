@@ -308,8 +308,9 @@ function boot(){$('#setup').hidden=!!S.me;$('#home').hidden=!S.me;if(!S.me)retur
 function saveProf(){S.me.name=$('#pn').value.trim()||S.me.name;S.me.burner=$('#pb').value.trim();S.me.av=AVSEL;S.me.cl=CLSEL;regSelf();save();
  Object.keys(conns).forEach(i=>sendTo(i,{t:'hi',name:S.me.name,burner:S.me.burner,av:S.me.av|0,cl:S.me.cl|0}));render();toast('Saved')}
 
+const PEER_OPTIONS=()=>({host:'dunbar-caller-signaling.onrender.com',port:443,path:'/peerjs',secure:true,debug:1});
 function start(){
- peer=new Peer(S.me.id);
+ peer=new Peer(S.me.id,PEER_OPTIONS());
  peer.on('open',()=>{$('#dot').classList.add('on');Object.keys(S.friends).forEach(connect)});
  peer.on('disconnected',()=>{$('#dot').classList.remove('on');setTimeout(()=>peer.reconnect(),3000)});
  peer.on('error',e=>{if(e.type==='network'||e.type==='server-error')setTimeout(()=>peer.reconnect(),4000)});
@@ -495,7 +496,7 @@ function regSelf(){const m={t:'reg',id:S.me.id,name:S.me.name,av:S.me.av|0,cl:S.
  if(dirH){dirP[S.me.id]=m;dirPush()}else if(dirC&&dirC.open)dirC.send(m)}
 function dirPush(){dirList=Object.values(dirP);dirCs.forEach(c=>c.open&&c.send({t:'list',l:dirList}));dirRender()}
 function joinDir(){
- const dp=new Peer('dc-'+NET);
+ const dp=new Peer('dc-'+NET,PEER_OPTIONS());
  dp.on('open',()=>{dirH=dp;dirP={};dirCs=new Set();
   dp.on('connection',c=>{dirCs.add(c);
    c.on('data',d=>{if(d&&d.t==='reg'&&/^bc[a-z0-9]{8}$/.test(d.id)){c._i=d.id;dirP[d.id]={id:d.id,name:String(d.name).slice(0,40),av:Math.max(0,Math.min(+d.av|0,EM.length-1)),cl:Math.max(0,Math.min(+d.cl|0,PAL.length-1))};dirPush()}});
@@ -505,7 +506,7 @@ function joinDir(){
  dp.on('close',()=>{if(dirH===dp){dirH=null;dirList=[];again(2000)}});
  dp.on('error',e=>{if(e.type==='unavailable-id'){dp.destroy();dirClient()}else if(dirH!==dp){try{dp.destroy()}catch(x){}again(4000)}});
 }
-function dirClient(){const dp=new Peer();
+function dirClient(){const dp=new Peer(undefined,PEER_OPTIONS());
  dp.on('open',()=>{const c=dp.connect('dc-'+NET,{reliable:true});dirC=c;
   c.on('open',regSelf);
   c.on('data',d=>{if(d&&d.t==='list'&&Array.isArray(d.l)){dirList=d.l.filter(x=>x&&/^bc[a-z0-9]{8}$/.test(x.id)).slice(0,200);dirRender()}});
