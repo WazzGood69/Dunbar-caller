@@ -1,0 +1,8 @@
+node_modules/
+android/.gradle/
+android/build/
+android/app/build/
+functions/node_modules/
+.firebase/
+firestore-debug.log
+firebase-debug.log
