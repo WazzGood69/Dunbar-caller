@@ -35,6 +35,9 @@ jobs:
             npx cap add android
           fi
 
+      - name: Use approved Dunbar Caller interface
+        run: cp www/dunbar-caller-theme-baseline.html www/index.html
+
       - name: Sync web app into Android
         run: npx cap sync android
 
