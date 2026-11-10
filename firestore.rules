@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function signedIn(){return request.auth != null;}
+  function member(m){return signedIn() && m is list && request.auth.uid in m;}
+  match /users/{uid}{
+   allow get: if signedIn();
+   allow list: if false;
+   allow create: if signedIn() && request.auth.uid==uid && request.resource.data.keys().hasOnly(['uid','displayName','username','phoneVerified','createdAt']) && request.resource.data.uid==uid && request.resource.data.displayName is string && request.resource.data.displayName.size()>=2 && request.resource.data.username.matches('^[a-z0-9_]{3,20}$') && request.resource.data.phoneVerified==true;
+   allow update: if signedIn() && request.auth.uid==uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName']);
+   allow delete: if false;
+  }
+  match /usernames/{name}{allow get:if signedIn();allow list:if false;allow create:if signedIn()&&request.resource.data.uid==request.auth.uid;allow update,delete:if false;}
+  match /friendRequests/{id}{
+   allow get,list:if signedIn()&&(resource.data.from==request.auth.uid||resource.data.to==request.auth.uid);
+   allow create:if signedIn()&&request.resource.data.from==request.auth.uid&&request.resource.data.to!=request.auth.uid&&request.resource.data.status=='pending';
+   allow update:if signedIn()&&resource.data.to==request.auth.uid&&resource.data.status=='pending'&&request.resource.data.status in ['accepted','declined'];
+   allow delete:if false;
+  }
+  match /friendships/{id}{allow get,list:if member(resource.data.members);allow create:if member(request.resource.data.members)&&request.resource.data.members.size()==2;allow update,delete:if false;}
+  match /conversations/{id}{
+   allow get,list:if member(resource.data.members);
+   allow create:if member(request.resource.data.members)&&request.resource.data.members.size()==2;
+   allow update:if member(resource.data.members);
+   allow delete:if false;
+   match /messages/{messageId}{
+    function parentMembers(){return get(/databases/$(database)/documents/conversations/$(id)).data.members;}
+    allow get,list:if member(parentMembers());
+    allow create:if member(parentMembers())&&request.resource.data.senderId==request.auth.uid&&request.resource.data.text is string&&request.resource.data.text.size()>0&&request.resource.data.text.size()<=4000;
+    allow update,delete:if false;
+   }
+  }
+  match /phoneIndex/{id}{allow read,write:if false;}
+  match /phoneLookupLimits/{id}{allow read,write:if false;}
+ }
+}
