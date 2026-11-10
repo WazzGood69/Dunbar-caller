@@ -1,0 +1,8 @@
+{
+  "appId": "com.dunbarcaller.app",
+  "appName": "Dunbar Caller",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
