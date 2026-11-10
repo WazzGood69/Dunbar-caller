@@ -15,7 +15,7 @@ service cloud.firestore {
     && request.resource.data.uid==uid && request.resource.data.displayName is string
     && request.resource.data.displayName.size()>=2
     && request.resource.data.username.matches('^[a-z0-9_]{3,20}$')
-    && request.resource.data.phoneVerified==true;
+    && request.resource.data.phoneVerified is bool;
    allow update: if signedIn() && request.auth.uid==uid
     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName']);
    allow delete: if false;
