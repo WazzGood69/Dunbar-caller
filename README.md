@@ -33,3 +33,19 @@ The app uses verified phone sign-in, searchable usernames, server-side verified 
 - Voice/video calling, push notifications, media sharing, and end-to-end encryption are not implemented.
 - Do not use it for emergencies or sensitive communications.
 - The repository currently contains no Firebase project credentials. Do not commit service-account keys, signing keys, passwords, or access tokens.
+
+## Render signaling server (voice/video call connection setup)
+
+The repository includes a Render Blueprint at `render.yaml` and a small PeerJS signaling server in `server/`.
+
+1. Sign in to https://render.com/ on your phone and connect your GitHub account.
+2. Choose **New** → **Blueprint** and select `WazzGood69/Dunbar-caller`.
+3. Review the service named `dunbar-caller-signaling` and deploy it.
+4. Wait until Render shows the service as **Live**. Its health endpoint should return JSON at `https://dunbar-caller-signaling.onrender.com/health`.
+5. Install the next APK built by GitHub Actions. The approved interface has been configured to use this Render host for PeerJS signaling.
+
+If Render says that service name is already taken, change the `name` in `render.yaml` and the `host` in `www/dunbar-caller-theme-baseline.html` to the exact `.onrender.com` hostname Render assigns, then commit the change so GitHub Actions rebuilds the APK.
+
+### Calling limitations
+
+Render hosts the PeerJS signaling service; it does **not** relay voice/video media. Calls use direct WebRTC connections and may fail on some mobile networks or restrictive routers until a TURN relay is configured. The current approved interface still stores profiles, contacts, and chat data locally and uses a temporary PeerJS directory; it is not yet connected to the Firebase accounts/messages backend. Treat this as an integration test, not a finished public calling service. Render's free service may sleep when idle, causing a delay on the first connection.
