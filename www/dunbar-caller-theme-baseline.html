@@ -247,6 +247,63 @@ button.sel .bg{background:var(--ax);color:var(--ac)}
 #home{animation:pin .45s ease-out}
 @keyframes pin{from{opacity:0;transform:translateY(14px)}}
 @keyframes win{from{opacity:0;transform:scale(.9)}}
+
+/* Android 9 / older WebView compatibility + narrow-screen layout.
+   Use physical edge properties as well as inset: older WebViews may ignore inset. */
+html,body{width:100%;min-width:0;max-width:100%;overflow-x:hidden}
+#boot,.pg,#wr,#sheet,#call{
+ position:fixed;top:0;right:0;bottom:0;left:0;
+ width:100%;max-width:none;box-sizing:border-box;
+}
+#boot{
+ min-width:100%;min-height:100vh;height:100vh;
+ padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+}
+#bc,#bmid,#fl,#ag{top:0;right:0;bottom:0;left:0;width:100%;height:100%}
+#wr{height:100vh}
+.pg{min-width:0;min-height:0}
+#setup{overflow-y:auto;justify-content:center;align-items:center}
+#home,#chat{overflow:hidden}
+#sheet{overflow:hidden}
+#sheet>div{width:100%;max-width:100%;max-height:90vh;overflow-y:auto;box-sizing:border-box;padding:16px}
+header{min-width:0}
+header b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#list,#msgs,.tp{min-width:0;min-height:0;overflow-x:hidden;overflow-y:auto}
+#bar{min-width:0}
+#bar input{min-width:0;flex:1}
+#tabs{min-width:0}
+#tabs button{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.win,.sw{width:100%;max-width:400px;min-width:0;box-sizing:border-box}
+input,button{max-width:100%;min-width:0}
+@media screen and (max-width:480px){
+ #boot{padding:calc(14px + env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom));gap:8px}
+ #boot .tag{left:14px;font-size:10px;letter-spacing:.12em}
+ #boot .tag.r{left:auto;right:14px}
+ #bmid{padding:0 12px 112px}
+ #bh{font-size:clamp(34px,13vw,60px)}
+ #bl{min-height:105px;font-size:11px;line-height:1.45;overflow:hidden}
+ .pr{font-size:10px;letter-spacing:.14em}
+ #bgo{font-size:11px;letter-spacing:.18em}
+ .pg{padding-left:0;padding-right:0}
+ header{padding:9px 10px;gap:6px}
+ header b{font-size:16px}
+ #tabs button{font-size:9px;padding:12px 1px;letter-spacing:0}
+ #bar{gap:4px;padding:6px}
+ #bar button{padding:8px 9px}
+ #sheet>div{padding:14px;max-height:88vh}
+ .win{max-height:calc(100vh - 24px);overflow-y:auto}
+ .wb{padding:12px}
+ .cg{grid-template-columns:repeat(5,minmax(0,1fr))}
+ .ag{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+@media screen and (max-height:620px){
+ #boot{gap:6px;padding-top:12px;padding-bottom:12px}
+ #bmid{padding-bottom:88px}
+ #radar{width:min(58vw,240px)}
+ #bl{min-height:70px;font-size:10px}
+ .win{max-height:calc(100vh - 16px);overflow-y:auto}
+}
+
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Rajdhani:wght@500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet"></head><body>
 
