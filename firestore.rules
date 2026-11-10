@@ -62,6 +62,36 @@ service cloud.firestore {
     allow update,delete: if false;
    }
   }
+
+  match /calls/{callId} {
+   function validPair(data) {
+    return data.friendshipId is string
+     && exists(/databases/$(database)/documents/friendships/$(data.friendshipId))
+     && get(/databases/$(database)/documents/friendships/$(data.friendshipId)).data.members.hasAll(data.participants);
+   }
+   allow create: if signedIn()
+    && request.resource.data.from==request.auth.uid
+    && request.resource.data.to is string
+    && request.resource.data.to!=request.auth.uid
+    && request.resource.data.participants is list
+    && request.resource.data.participants.size()==2
+    && request.resource.data.participants.hasAll([request.auth.uid,request.resource.data.to])
+    && request.resource.data.status=='ringing'
+    && validPair(request.resource.data);
+   allow get, list: if signedIn() && request.auth.uid in resource.data.participants;
+   allow update: if signedIn()
+    && request.auth.uid in resource.data.participants
+    && request.resource.data.participants==resource.data.participants
+    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['answer','status'])
+    && request.resource.data.status in ['ringing','active','ended'];
+   allow delete: if false;
+   match /{candidateSide}/{candidateId} {
+    function parentCall(){return get(/databases/$(database)/documents/calls/$(callId)).data;}
+    allow get, list: if signedIn() && request.auth.uid in parentCall().participants && candidateSide in ['callerCandidates','calleeCandidates'];
+    allow create: if signedIn() && request.auth.uid in parentCall().participants && candidateSide in ['callerCandidates','calleeCandidates'];
+    allow update, delete: if false;
+   }
+  }
   match /phoneIndex/{id}{allow read,write:if false;}
   match /phoneLookupLimits/{id}{allow read,write:if false;}
  }
