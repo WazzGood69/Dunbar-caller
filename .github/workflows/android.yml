@@ -1,4 +1,4 @@
-name: Build Dunbar Caller APK
+name: Build Dunbar Caller APKs
 
 on:
   workflow_dispatch:
@@ -10,10 +10,25 @@ permissions:
 
 jobs:
   build:
+    name: Build ${{ matrix.label }} APK
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Last pre-A10e layout version: preserve the earlier working build.
+          - label: Stable
+            ref: 9093ec423050f37d29c571170777dd788893cd64
+            artifact: dunbar-caller-working-apk
+          # Responsive layout + Android 9 / older WebView compatibility.
+          - label: Galaxy A10e
+            ref: 19f8e24ea0389e67dbb917e8937c8577487e054c
+            artifact: dunbar-caller-galaxy-a10e-apk
     steps:
-      - name: Check out source
+      - name: Check out selected app version
         uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.ref }}
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -47,7 +62,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: dunbar-caller-debug-apk
+          name: ${{ matrix.artifact }}
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
