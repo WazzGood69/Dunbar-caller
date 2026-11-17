@@ -314,8 +314,7 @@ input,button{max-width:100%;min-width:0}
 <div id="ag"><div id="ag1"></div><div id="ag2"></div></div><div id="fl"></div></div>
 <div id="setup" class="pg" hidden><div class="win">
 <div class="wt"><span>DUNBAR CALLER // SIGN IN</span><i></i></div><div class="wb">
-<label>Name</label><input id="sn" maxlength="20" placeholder="Your name" autocomplete="off" autocapitalize="off">
-<label>Burner number</label><input id="sb" type="tel" maxlength="20" placeholder="+1 555 000 0000">
+<label>Username</label><input id="sn" maxlength="20" placeholder="@yourname" autocomplete="username" autocapitalize="off">
 <label>Logo</label><div class="ag" id="ap"></div>
 <label>Logo color</label><div class="cg" id="cp"></div>
 <button class="pri" onclick="setup0()">DEPLOY &#9654;</button></div></div></div>
@@ -323,7 +322,7 @@ input,button{max-width:100%;min-width:0}
 <div id="home" class="pg" hidden>
 <header><b id="htl">DUNBAR CALLER</b><span id="dot" class="d"></span><button onclick="sheet(1)">＋</button></header>
 <div id="list" class="tp"></div><div id="reqs" class="tp" hidden></div><div id="vms" class="tp" hidden></div>
-<div id="setp" class="tp" hidden><h4>Profile</h4><div class="ag" id="pap"></div><div class="cg" id="pcp"></div><input id="pn" maxlength="20" placeholder="Name"><input id="pb" type="tel" maxlength="20" placeholder="Burner number"><button class="pri" onclick="saveProf()">Save profile</button>
+<div id="setp" class="tp" hidden><h4>Profile</h4><div class="ag" id="pap"></div><div class="cg" id="pcp"></div><input id="pn" maxlength="20" placeholder="@username" autocomplete="username"><button class="pri" onclick="saveProf()">Save profile</button>
 <h4>Theme</h4><div id="th"></div><h4>Wallpaper</h4><div id="wpk"></div><h4>Alerts</h4><div id="nt"></div></div>
 <nav id="tabs"></nav></div>
 
@@ -359,11 +358,11 @@ const rd=(b,cb)=>{const r=new FileReader();r.onload=()=>cb(r.result);r.readAsDat
 let peer,conns={},cur=null,call=null,ls=null,linked=false;
 
 function setup0(){const n=$('#sn').value.trim(),b=$('#sb').value.trim();if(!n)return toast('Enter a username');if(b.replace(/\D/g,'').length<7)return toast('Enter your burner number');tone(440,.1,'square',.05);tone(880,.25,'square',.05,.1);
- S.me={id:'bc'+Math.random().toString(36).slice(2,10),name:n,burner:$('#sb').value.trim(),av:AVSEL,cl:CLSEL};save();boot()}
+ S.me={id:'bc'+Math.random().toString(36).slice(2,10),name:n,username:n.toLowerCase(),av:AVSEL,cl:CLSEL};save();boot()}
 function boot(){$('#setup').hidden=!!S.me;$('#home').hidden=!S.me;if(!S.me)return;
- $('#code').textContent=S.me.id;$('#pn').value=S.me.name;AVSEL=S.me.av|0;CLSEL=S.me.cl|0;apUI();$('#pb').value=S.me.burner||'';start();render()}
-function saveProf(){S.me.name=$('#pn').value.trim()||S.me.name;S.me.burner=$('#pb').value.trim();S.me.av=AVSEL;S.me.cl=CLSEL;regSelf();save();
- Object.keys(conns).forEach(i=>sendTo(i,{t:'hi',name:S.me.name,burner:S.me.burner,av:S.me.av|0,cl:S.me.cl|0}));render();toast('Saved')}
+ $('#code').textContent=S.me.id;$('#pn').value=S.me.name;AVSEL=S.me.av|0;CLSEL=S.me.cl|0;apUI();start();render()}
+function saveProf(){S.me.name=$('#pn').value.trim().replace(/^@/,'')||S.me.name;S.me.username=S.me.name.toLowerCase();S.me.av=AVSEL;S.me.cl=CLSEL;regSelf();save();
+ Object.keys(conns).forEach(i=>sendTo(i,{t:'hi',name:S.me.name,av:S.me.av|0,cl:S.me.cl|0}));render();toast('Saved')}
 
 const PEER_OPTIONS=()=>({host:'dunbar-caller-signaling.onrender.com',port:443,path:'/peerjs',secure:true,debug:1});
 function start(){
@@ -387,17 +386,17 @@ function flush(id){const c=conns[id];if(!c)return;let ch=0;
 
 function addId(id){const u=dirList.find(x=>x.id===id);if(!S.friends[id])S.friends[id]={name:u?u.name:id,av:u?u.av:0,cl:u?u.cl|0:0,ok:false};save();connect(id);render();toast('Request sent')}
 function addFriend(){const id=$('#fc').value.trim();if(!/^bc[a-z0-9]{8}$/.test(id)||id===S.me.id)return toast('Invalid code');addId(id);$('#fc').value=''}
-function acc(id){S.friends[id]={name:S.pend[id],ok:true,burner:(S.friends[id]||{}).burner,av:(dirList.find(x=>x.id===id)||{}).av|0,cl:(dirList.find(x=>x.id===id)||{}).cl|0};delete S.pend[id];save();sendTo(id,{t:'acc',name:S.me.name,burner:S.me.burner,av:S.me.av|0,cl:S.me.cl|0});connect(id);render()}
+function acc(id){S.friends[id]={name:S.pend[id],ok:true,av:(dirList.find(x=>x.id===id)||{}).av|0,cl:(dirList.find(x=>x.id===id)||{}).cl|0};delete S.pend[id];save();sendTo(id,{t:'acc',name:S.me.name,burner:S.me.burner,av:S.me.av|0,cl:S.me.cl|0});connect(id);render()}
 function dec(id){delete S.pend[id];if(!sendTo(id,{t:'dec'}))S.dq[id]=1;save();render()}
 
 const TYPES=['text','img','gif','file','vm'];
 function recv(id,d){
  if(!d||typeof d!=='object')return;const f=S.friends[id];
- if(d.t==='hi'){if(f&&f.ok){f.name=String(d.name).slice(0,40);f.burner=String(d.burner||'').slice(0,20);f.av=Math.max(0,Math.min(+d.av|0,EM.length-1));f.cl=Math.max(0,Math.min(+d.cl|0,PAL.length-1));save();render()}}
+ if(d.t==='hi'){if(f&&f.ok){f.name=String(d.name).slice(0,40);f.av=Math.max(0,Math.min(+d.av|0,EM.length-1));f.cl=Math.max(0,Math.min(+d.cl|0,PAL.length-1));save();render()}}
  else if(d.t==='req'){const n=String(d.name).slice(0,40);if(S.dq[id])return;
-  if(f){f.ok=true;f.name=n;f.burner=String(d.burner||'').slice(0,20);f.av=Math.max(0,Math.min(+d.av|0,EM.length-1));f.cl=Math.max(0,Math.min(+d.cl|0,PAL.length-1));sendTo(id,{t:'acc',name:S.me.name,burner:S.me.burner,av:S.me.av|0,cl:S.me.cl|0})}else{S.pend[id]=n;ban(0,'FRIEND REQUEST',n+' wants to connect',()=>tab('reqs'));tone(900,.08,'square',.05);tone(1200,.1,'square',.05,.1)}save();render()}
+  if(f){f.ok=true;f.name=n;f.username=String(d.burner||'').slice(0,20);f.av=Math.max(0,Math.min(+d.av|0,EM.length-1));f.cl=Math.max(0,Math.min(+d.cl|0,PAL.length-1));sendTo(id,{t:'acc',name:S.me.name,burner:S.me.burner,av:S.me.av|0,cl:S.me.cl|0})}else{S.pend[id]=n;ban(0,'FRIEND REQUEST',n+' wants to connect',()=>tab('reqs'));tone(900,.08,'square',.05);tone(1200,.1,'square',.05,.1)}save();render()}
  else if(d.t==='dec'&&f&&!f.ok){ban(f.av,'REQUEST DECLINED',f.name+' declined your request',null,0,f.cl);tone(300,.25,'square',.06);delete S.friends[id];save();render()}
- else if(d.t==='acc'&&f){if(!f.ok){ban(f.av,'REQUEST ACCEPTED',String(d.name).slice(0,40)+' is now your friend',()=>tab('list'),0,f.cl);tone(700,.08,'square',.05);tone(1000,.12,'square',.05,.1)}f.ok=true;f.name=String(d.name).slice(0,40);f.burner=String(d.burner||'').slice(0,20);f.av=Math.max(0,Math.min(+d.av|0,EM.length-1));f.cl=Math.max(0,Math.min(+d.cl|0,PAL.length-1));save();render()}
+ else if(d.t==='acc'&&f){if(!f.ok){ban(f.av,'REQUEST ACCEPTED',String(d.name).slice(0,40)+' is now your friend',()=>tab('list'),0,f.cl);tone(700,.08,'square',.05);tone(1000,.12,'square',.05,.1)}f.ok=true;f.name=String(d.name).slice(0,40);f.username=String(d.burner||'').slice(0,20);f.av=Math.max(0,Math.min(+d.av|0,EM.length-1));f.cl=Math.max(0,Math.min(+d.cl|0,PAL.length-1));save();render()}
  else if(d.t==='m'&&f&&f.ok&&d.m){const m=d.m;
   if(!TYPES.includes(m.type)||(m.data&&!/^(data:|https:\/\/)/.test(m.data))||(m.type==='file'&&m.data&&!m.data.startsWith('data:')))return;
   let k=id;if(m.g){if(!/^g[a-z0-9]+$/.test(m.g))return;
@@ -433,7 +432,7 @@ function render(){
   return `<div class="row" onclick="openChat('${k}')"><span class="un">${avb(av,on,cl)}<span>${esc(name)}${ph?' ☎':''}<br><small>${esc(sub||(l?pv(l).slice(0,40):''))}</small></span></span>${S.un[k]?`<b class="bg">${S.un[k]}</b>`:''}</div>`};
  let h='';const gs=Object.entries(S.groups),fs=Object.entries(S.friends).filter(([k,f])=>f.ok);
  if(gs.length)h+='<h4>Groups</h4>'+gs.map(([k,g])=>row(k,g.name,undefined,g.members.length+1+' members',0,3,0)).join('');
- h+='<h4>Friends</h4>'+(fs.length?fs.map(([k,f])=>row(k,f.name,!!(conns[k]&&conns[k].open),'',f.burner,f.av,f.cl)).join(''):'<p class="mu">Tap ＋ to see who is online and send a friend request.</p>');
+ h+='<h4>Friends</h4>'+(fs.length?fs.map(([k,f])=>row(k,f.name,!!(conns[k]&&conns[k].open),'',false,f.av,f.cl)).join(''):'<p class="mu">Tap ＋ to see who is online and send a friend request.</p>');
  $('#list').innerHTML=h;
  const rq=Object.entries(S.pend),sent=Object.entries(S.friends).filter(([k,f])=>!f.ok);
  let r=rq.length?'<h4>Incoming</h4>'+rq.map(([i,n])=>{const u=dirList.find(x=>x.id===i)||{};return `<div class="row"><span class="un">${avb(u.av,undefined,u.cl)}${esc(n)}</span><span><button class="ok" onclick="acc('${i}')">✓</button> <button class="no" onclick="dec('${i}')">✕</button></span></div>`}).join(''):'<p class="mu">No friend requests right now.</p>';
@@ -610,7 +609,7 @@ function ntTog(k){if(k==='snd'){togSnd();ntUI();return}const s=NS();
 let TAB='list';
 function tab(t){TAB=t;['list','reqs','vms','setp'].forEach(i=>$('#'+i).hidden=i!==t);
  if(t==='vms'){S.vs=Date.now();save()}
- if(t==='setp'){$('#pn').value=S.me.name;$('#pb').value=S.me.burner||'';AVSEL=S.me.av|0;CLSEL=S.me.cl|0;apUI();thUI();wpUI();ntUI()}
+ if(t==='setp'){$('#pn').value=S.me.name;AVSEL=S.me.av|0;CLSEL=S.me.cl|0;apUI();thUI();wpUI();ntUI()}
  render()}
 function warp(c){const x=c.getContext('2d');let W,H,raf;const col=(getComputedStyle(c).getPropertyValue('--ac')||'#fff').trim();
  W=c.width=innerWidth;H=c.height=innerHeight;const P=Array.from({length:120},()=>({x:Math.random()*2-1,y:Math.random()*2-1,z:Math.random()}));
