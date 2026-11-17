@@ -350,7 +350,7 @@ input,button{max-width:100%;min-width:0}
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let S;try{S=JSON.parse(localStorage.getItem('bc'))}catch(e){}
-S=S||{me:null,friends:{},groups:{},msgs:{},pend:{}};S.un=S.un||{};S.dq=S.dq||{};
+S=S||{me:null,friends:{},groups:{},msgs:{},pend:{}};if(S.me)delete S.me.burner;Object.values(S.friends||{}).forEach(f=>delete f.burner);S.un=S.un||{};S.dq=S.dq||{};
 const save=()=>{try{localStorage.setItem('bc',JSON.stringify(S))}catch(e){toast('Storage full, media not saved')}};
 let tt;function toast(t){const e=$('#toast');e.textContent=t;e.hidden=false;clearTimeout(tt);tt=setTimeout(()=>e.hidden=true,2800)}
 const nm=id=>S.me&&id===S.me.id?'Me':(S.friends[id]?S.friends[id].name:id);
@@ -463,7 +463,7 @@ function bub(m){const me=m.from==='me';let c;
  return `<div class="b ${me?'me':''}">${who}${c}<small>${new Date(m.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}${m.q?' ⏳ will send when online':''}</small></div>`}
 function openChat(k){cur=k;delete S.un[k];const g=S.groups[k],f=S.friends[k];$('#home').hidden=true;$('#chat').hidden=false;
  $('#ct').innerHTML=(f?avb(f.av,undefined,f.cl)+' ':g?avb(3)+' ':'')+esc(g?g.name:f?f.name:k);
- $('#cb').innerHTML=g?'':`<button onclick="dial('${k}',false)">📞</button> <button onclick="dial('${k}',true)">📹</button>`+(f&&false?'':'');
+ $('#cb').innerHTML=g?'':`<button onclick="dial('${k}',false)">VOICE</button> <button onclick="dial('${k}',true)">VIDEO</button>`;
  const el=$('#msgs');el.innerHTML=(S.msgs[k]||[]).map(bub).join('');el.scrollTop=el.scrollHeight}
 function back(){cur=null;$('#chat').hidden=true;$('#home').hidden=false;render()}
 
