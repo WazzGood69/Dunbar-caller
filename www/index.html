@@ -632,4 +632,98 @@ applyWall(localStorage.getItem('bcw')||'ops');
 wpUI();
 apUI();
 intro(boot);
+
+/* THE LOUNGE additions: status, pinned conversations, and message search */
+(()=>{
+ const style=document.createElement('style');
+ style.textContent=`
+ #loungeTools{display:flex;gap:6px;align-items:center}
+ #loungeTools button{padding:6px 9px;font-size:12px}
+ #loungeSearch{position:fixed;inset:0;z-index:220;background:rgba(0,0,0,.88);display:none;align-items:flex-start;justify-content:center;padding:12vh 14px 20px}
+ #loungeSearch.open{display:flex}
+ #loungeSearch .panel{width:min(620px,100%);max-height:76vh;overflow:auto;background:var(--sf);border:1px solid var(--ac);padding:16px;box-shadow:0 0 40px #000}
+ #loungeSearch .result{padding:10px;border-bottom:1px solid var(--ln);cursor:pointer}
+ #loungeSearch .result small{display:block;margin-top:4px}
+ #loungeSearch .close{float:right}
+ .lounge-pin{color:var(--ac);font-size:11px;margin-left:6px}
+ .lounge-status{display:block;color:var(--mu);font:11px var(--mn);text-transform:none;letter-spacing:0;margin-top:3px}
+ `;
+ document.head.appendChild(style);
+ const overlay=document.createElement('div');overlay.id='loungeSearch';
+ overlay.innerHTML='<div class="panel"><button class="close" id="loungeClose">CLOSE ✕</button><h2>SEARCH THE LOUNGE</h2><input id="loungeQuery" placeholder="Search messages and conversations…"><div id="loungeResults" class="mu">Type at least 2 characters.</div></div>';
+ document.body.appendChild(overlay);
+ const cb=document.querySelector('#chat header #cb');
+ if(cb){cb.insertAdjacentHTML('beforebegin','<span id="loungeTools"><button id="loungeFind" title="Search messages">⌕</button><button id="loungePin" title="Pin conversation">☆</button></span>')}
+ const setp=document.querySelector('#setp');
+ if(setp&&!document.querySelector('#loungeStatus')){
+  const h=document.createElement('div');h.innerHTML='<h4>Presence</h4><label for="loungeStatus">Status message</label><input id="loungeStatus" maxlength="80" placeholder="What are you up to?"><button id="loungeStatusSave" class="pri">Update status</button>';
+  const first=setp.querySelector('h4');setp.insertBefore(h,first);
+ }
+ const originalRender=window.render;
+ if(typeof originalRender==='function'){
+  window.render=function(){
+   originalRender();
+   const list=document.querySelector('#list');
+   if(list){
+    list.querySelectorAll('.row[onclick]').forEach(row=>{
+     const m=(row.getAttribute('onclick')||'').match(/openChat\('([^']+)'\)/);if(!m)return;
+     const key=m[1],f=S.friends[key],g=S.groups[key];
+     if(S.pinned&&S.pinned[key]){const name=row.querySelector('.un span');if(name&&!name.querySelector('.lounge-pin'))name.insertAdjacentHTML('beforeend',' <span class="lounge-pin">★ PINNED</span>')}
+     if(f&&f.status){const small=row.querySelector('.un small');if(small&&!small.parentElement.querySelector('.lounge-status'))small.insertAdjacentHTML('afterend','<span class="lounge-status">'+esc(f.status)+'</span>')}
+    });
+   }
+  };
+ }
+ const oldSendTo=window.sendTo;
+ if(typeof oldSendTo==='function')window.sendTo=function(id,d){
+  if(d&&d.t==='hi'&&S.me)d.status=String(S.me.status||'').slice(0,80);
+  return oldSendTo(id,d);
+ };
+ const oldRecv=window.recv;
+ if(typeof oldRecv==='function')window.recv=function(id,d){
+  if(d&&d.t==='hi'&&S.friends&&S.friends[id])S.friends[id].status=String(d.status||'').slice(0,80);
+  return oldRecv(id,d);
+ };
+ const open=()=>{overlay.classList.add('open');const q=document.querySelector('#loungeQuery');q.value='';document.querySelector('#loungeResults').textContent='Type at least 2 characters.';q.focus()};
+ const close=()=>overlay.classList.remove('open');
+ document.querySelector('#loungeFind')?.addEventListener('click',open);
+ document.querySelector('#loungeClose').addEventListener('click',close);
+ overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
+ document.querySelector('#loungeQuery').addEventListener('input',e=>{
+  const q=e.target.value.trim().toLowerCase(),out=document.querySelector('#loungeResults');
+  if(q.length<2){out.textContent='Type at least 2 characters.';return}
+  const hits=[];
+  Object.entries(S.msgs||{}).forEach(([key,arr])=>arr.forEach(m=>{
+   const body=String(m.text||m.name||'');if(body.toLowerCase().includes(q)){
+    const peer=S.friends[key],group=S.groups[key],label=group?.name||peer?.name||key;
+    hits.push({key,label,body:body.slice(0,180),ts:m.ts||0});
+   }
+  }));
+  hits.sort((a,b)=>b.ts-a.ts);
+  out.innerHTML=hits.length?hits.slice(0,60).map((h,i)=>'<div class="result" data-key="'+esc(h.key)+'"><b>'+esc(h.label)+'</b><small>'+esc(h.body)+'</small><small>'+new Date(h.ts).toLocaleString()+'</small></div>').join(''):'No matching messages found on this device.';
+  out.querySelectorAll('[data-key]').forEach(el=>el.addEventListener('click',()=>{close();openChat(el.dataset.key)}));
+ });
+ document.querySelector('#loungePin')?.addEventListener('click',()=>{
+  if(!cur)return;S.pinned=S.pinned||{};
+  if(S.pinned[cur]){delete S.pinned[cur];toast('Conversation unpinned')}
+  else{S.pinned[cur]=1;toast('Conversation pinned')}
+  save();render();
+  const b=document.querySelector('#loungePin');if(b)b.textContent=S.pinned[cur]?'★':'☆';
+ });
+ const oldOpen=window.openChat;
+ if(typeof oldOpen==='function')window.openChat=function(k){
+  oldOpen(k);
+  const b=document.querySelector('#loungePin');if(b)b.textContent=S.pinned&&S.pinned[k]?'★':'☆';
+ };
+ const statusInput=document.querySelector('#loungeStatus');
+ if(statusInput){statusInput.value=String(S.me?.status||'');
+  document.querySelector('#loungeStatusSave').addEventListener('click',()=>{
+   S.me.status=statusInput.value.trim().slice(0,80);save();
+   Object.keys(conns||{}).forEach(id=>sendTo(id,{t:'hi',name:S.me.name,username:S.me.username||S.me.name,av:S.me.av|0,cl:S.me.cl|0,status:S.me.status}));
+   render();toast('Status updated');
+  });
+ }
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')close()});
+})();
+
 </script></body></html>
