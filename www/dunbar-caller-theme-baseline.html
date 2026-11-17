@@ -375,7 +375,7 @@ function start(){
 }
 function connect(id){if(!peer||!peer.open||(conns[id]&&conns[id].open))return;setupConn(peer.connect(id,{reliable:true}))}
 function setupConn(c){
- c.on('open',()=>{conns[c.peer]=c;c.send({t:'hi',name:S.me.name,burner:S.me.burner,av:S.me.av|0,cl:S.me.cl|0});
+ c.on('open',()=>{conns[c.peer]=c;c.send({t:'hi',name:S.me.name,av:S.me.av|0,cl:S.me.cl|0});
   const f=S.friends[c.peer];if(f&&!f.ok)c.send({t:'req',name:S.me.name,burner:S.me.burner,av:S.me.av|0,cl:S.me.cl|0});flush(c.peer);if(S.dq[c.peer]){c.send({t:'dec'});delete S.dq[c.peer];save()}render()});
  c.on('data',d=>recv(c.peer,d));
  c.on('close',()=>{if(conns[c.peer]===c){delete conns[c.peer];render()}});
@@ -394,7 +394,7 @@ function recv(id,d){
  if(!d||typeof d!=='object')return;const f=S.friends[id];
  if(d.t==='hi'){if(f&&f.ok){f.name=String(d.name).slice(0,40);f.av=Math.max(0,Math.min(+d.av|0,EM.length-1));f.cl=Math.max(0,Math.min(+d.cl|0,PAL.length-1));save();render()}}
  else if(d.t==='req'){const n=String(d.name).slice(0,40);if(S.dq[id])return;
-  if(f){f.ok=true;f.name=n;f.username=String(d.burner||'').slice(0,20);f.av=Math.max(0,Math.min(+d.av|0,EM.length-1));f.cl=Math.max(0,Math.min(+d.cl|0,PAL.length-1));sendTo(id,{t:'acc',name:S.me.name,burner:S.me.burner,av:S.me.av|0,cl:S.me.cl|0})}else{S.pend[id]=n;ban(0,'FRIEND REQUEST',n+' wants to connect',()=>tab('reqs'));tone(900,.08,'square',.05);tone(1200,.1,'square',.05,.1)}save();render()}
+  if(f){f.ok=true;f.name=n;f.av=Math.max(0,Math.min(+d.av|0,EM.length-1));f.cl=Math.max(0,Math.min(+d.cl|0,PAL.length-1));sendTo(id,{t:'acc',name:S.me.name,burner:S.me.burner,av:S.me.av|0,cl:S.me.cl|0})}else{S.pend[id]=n;ban(0,'FRIEND REQUEST',n+' wants to connect',()=>tab('reqs'));tone(900,.08,'square',.05);tone(1200,.1,'square',.05,.1)}save();render()}
  else if(d.t==='dec'&&f&&!f.ok){ban(f.av,'REQUEST DECLINED',f.name+' declined your request',null,0,f.cl);tone(300,.25,'square',.06);delete S.friends[id];save();render()}
  else if(d.t==='acc'&&f){if(!f.ok){ban(f.av,'REQUEST ACCEPTED',String(d.name).slice(0,40)+' is now your friend',()=>tab('list'),0,f.cl);tone(700,.08,'square',.05);tone(1000,.12,'square',.05,.1)}f.ok=true;f.name=String(d.name).slice(0,40);f.username=String(d.burner||'').slice(0,20);f.av=Math.max(0,Math.min(+d.av|0,EM.length-1));f.cl=Math.max(0,Math.min(+d.cl|0,PAL.length-1));save();render()}
  else if(d.t==='m'&&f&&f.ok&&d.m){const m=d.m;
@@ -463,7 +463,7 @@ function bub(m){const me=m.from==='me';let c;
  return `<div class="b ${me?'me':''}">${who}${c}<small>${new Date(m.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}${m.q?' ⏳ will send when online':''}</small></div>`}
 function openChat(k){cur=k;delete S.un[k];const g=S.groups[k],f=S.friends[k];$('#home').hidden=true;$('#chat').hidden=false;
  $('#ct').innerHTML=(f?avb(f.av,undefined,f.cl)+' ':g?avb(3)+' ':'')+esc(g?g.name:f?f.name:k);
- $('#cb').innerHTML=g?'':`<button onclick="dial('${k}',false)">📞</button> <button onclick="dial('${k}',true)">📹</button>`+(f&&f.burner?` <a href="tel:${esc(f.burner)}"><button>☎️</button></a>`:'');
+ $('#cb').innerHTML=g?'':`<button onclick="dial('${k}',false)">📞</button> <button onclick="dial('${k}',true)">📹</button>`+(f&&false?'':'');
  const el=$('#msgs');el.innerHTML=(S.msgs[k]||[]).map(bub).join('');el.scrollTop=el.scrollHeight}
 function back(){cur=null;$('#chat').hidden=true;$('#home').hidden=false;render()}
 
