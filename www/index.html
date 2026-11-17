@@ -314,8 +314,8 @@ function start(){
 }
 function connect(id){if(!peer||!peer.open||(conns[id]&&conns[id].open))return;setupConn(peer.connect(id,{reliable:true}))}
 function setupConn(c){
- c.on('open',()=>{conns[c.peer]=c;c.send({t:'hi',name:S.me.name,av:S.me.av|0,cl:S.me.cl|0});
-  const f=S.friends[c.peer];if(f&&!f.ok)c.send({t:'req',name:S.me.name,av:S.me.av|0,cl:S.me.cl|0});flush(c.peer);if(S.dq[c.peer]){c.send({t:'dec'});delete S.dq[c.peer];save()}render()});
+ c.on('open',()=>{conns[c.peer]=c;c.send({t:'hi',name:S.me.name,username:S.me.username||S.me.name,av:S.me.av|0,cl:S.me.cl|0});
+  const f=S.friends[c.peer];if(f&&!f.ok)c.send({t:'req',name:S.me.name,username:S.me.username||S.me.name,av:S.me.av|0,cl:S.me.cl|0});flush(c.peer);if(S.dq[c.peer]){c.send({t:'dec'});delete S.dq[c.peer];save()}render()});
  c.on('data',d=>recv(c.peer,d));
  c.on('close',()=>{if(conns[c.peer]===c){delete conns[c.peer];render()}});
 }
@@ -325,7 +325,7 @@ function flush(id){const c=conns[id];if(!c)return;let ch=0;
 
 function addId(id){const u=dirList.find(x=>x.id===id);if(!S.friends[id])S.friends[id]={name:u?u.name:id,av:u?u.av:0,cl:u?u.cl|0:0,ok:false};save();connect(id);render();toast('Request sent')}
 function addFriend(){const id=$('#fc').value.trim();if(!/^bc[a-z0-9]{8}$/.test(id)||id===S.me.id)return toast('Invalid code');addId(id);$('#fc').value=''}
-function acc(id){S.friends[id]={name:S.pend[id],ok:true,av:(dirList.find(x=>x.id===id)||{}).av|0,cl:(dirList.find(x=>x.id===id)||{}).cl|0};delete S.pend[id];save();sendTo(id,{t:'acc',name:S.me.name,av:S.me.av|0,cl:S.me.cl|0});connect(id);render()}
+function acc(id){S.friends[id]={name:S.pend[id],ok:true,av:(dirList.find(x=>x.id===id)||{}).av|0,cl:(dirList.find(x=>x.id===id)||{}).cl|0};delete S.pend[id];save();sendTo(id,{t:'acc',name:S.me.name,username:S.me.username||S.me.name,av:S.me.av|0,cl:S.me.cl|0});connect(id);render()}
 function dec(id){delete S.pend[id];if(!sendTo(id,{t:'dec'}))S.dq[id]=1;save();render()}
 
 const TYPES=['text','img','gif','file','vm'];
@@ -333,7 +333,7 @@ function recv(id,d){
  if(!d||typeof d!=='object')return;const f=S.friends[id];
  if(d.t==='hi'){if(f&&f.ok){f.name=String(d.username||d.name).replace(/^@/,'').slice(0,20);f.av=Math.max(0,Math.min(+d.av|0,EM.length-1));f.cl=Math.max(0,Math.min(+d.cl|0,PAL.length-1));save();render()}}
  else if(d.t==='req'){const n=String(d.username||d.name).replace(/^@/,'').slice(0,20);if(S.dq[id])return;
-  if(f){f.ok=true;f.name=n;f.av=Math.max(0,Math.min(+d.av|0,EM.length-1));f.cl=Math.max(0,Math.min(+d.cl|0,PAL.length-1));sendTo(id,{t:'acc',name:S.me.name,av:S.me.av|0,cl:S.me.cl|0})}else{S.pend[id]=n;ban(0,'FRIEND REQUEST',n+' wants to connect',()=>tab('reqs'));tone(900,.08,'square',.05);tone(1200,.1,'square',.05,.1)}save();render()}
+  if(f){f.ok=true;f.name=n;f.av=Math.max(0,Math.min(+d.av|0,EM.length-1));f.cl=Math.max(0,Math.min(+d.cl|0,PAL.length-1));sendTo(id,{t:'acc',name:S.me.name,username:S.me.username||S.me.name,av:S.me.av|0,cl:S.me.cl|0})}else{S.pend[id]=n;ban(0,'FRIEND REQUEST',n+' wants to connect',()=>tab('reqs'));tone(900,.08,'square',.05);tone(1200,.1,'square',.05,.1)}save();render()}
  else if(d.t==='dec'&&f&&!f.ok){ban(f.av,'REQUEST DECLINED',f.name+' declined your request',null,0,f.cl);tone(300,.25,'square',.06);delete S.friends[id];save();render()}
  else if(d.t==='acc'&&f){if(!f.ok){ban(f.av,'REQUEST ACCEPTED',String(d.name).slice(0,40)+' is now your friend',()=>tab('list'),0,f.cl);tone(700,.08,'square',.05);tone(1000,.12,'square',.05,.1)}f.ok=true;f.name=String(d.username||d.name).replace(/^@/,'').slice(0,20);f.av=Math.max(0,Math.min(+d.av|0,EM.length-1));f.cl=Math.max(0,Math.min(+d.cl|0,PAL.length-1));save();render()}
  else if(d.t==='m'&&f&&f.ok&&d.m){const m=d.m;
@@ -489,7 +489,7 @@ function apUI(){['ap','pap'].forEach(id=>{const e=$('#'+id);if(e)e.innerHTML=EM.
 let dirList=[],dirC=null,dirH=null,dirCs=new Set(),dirP={},dirT;
 const again=ms=>{clearTimeout(dirT);dirT=setTimeout(joinDir,ms)};
 const dirRender=()=>{if(!$('#sheet').hidden)render()};
-function regSelf(){const m={t:'reg',id:S.me.id,name:S.me.name,av:S.me.av|0,cl:S.me.cl|0};
+function regSelf(){const m={t:'reg',id:S.me.id,name:S.me.name,username:S.me.username||S.me.name,av:S.me.av|0,cl:S.me.cl|0};
  if(dirH){dirP[S.me.id]=m;dirPush()}else if(dirC&&dirC.open)dirC.send(m)}
 function dirPush(){dirList=Object.values(dirP);dirCs.forEach(c=>c.open&&c.send({t:'list',l:dirList}));dirRender()}
 function joinDir(){
