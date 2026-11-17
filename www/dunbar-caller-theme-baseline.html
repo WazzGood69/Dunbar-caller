@@ -351,7 +351,7 @@ const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let S;try{S=JSON.parse(localStorage.getItem('bc'))}catch(e){}
 S=S||{me:null,friends:{},groups:{},msgs:{},pend:{}};if(S.me)delete S.me.burner;Object.values(S.friends||{}).forEach(f=>delete f.burner);S.un=S.un||{};S.dq=S.dq||{};
-const save=()=>{try{localStorage.setItem('bc',JSON.stringify(S))}catch(e){toast('Storage full, media not saved')}};
+const save=()=>{try{localStorage.setItem('bc',JSON.stringify(S))}catch(e){toast('Storage full, media not saved')}};save();
 let tt;function toast(t){const e=$('#toast');e.textContent=t;e.hidden=false;clearTimeout(tt);tt=setTimeout(()=>e.hidden=true,2800)}
 const nm=id=>S.me&&id===S.me.id?'Me':(S.friends[id]?S.friends[id].name:id);
 const rd=(b,cb)=>{const r=new FileReader();r.onload=()=>cb(r.result);r.readAsDataURL(b)};
