@@ -18,11 +18,11 @@ jobs:
         include:
           # Last pre-A10e layout version: preserve the earlier working build.
           - label: Stable
-            ref: 9093ec423050f37d29c571170777dd788893cd64
+            ref: main
             artifact: dunbar-caller-working-apk
           # Responsive layout + Android 9 / older WebView compatibility.
           - label: Galaxy A10e
-            ref: 19f8e24ea0389e67dbb917e8937c8577487e054c
+            ref: main
             artifact: dunbar-caller-galaxy-a10e-apk
     steps:
       - name: Check out selected app version
