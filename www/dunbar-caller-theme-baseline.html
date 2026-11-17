@@ -357,7 +357,7 @@ const nm=id=>S.me&&id===S.me.id?'Me':(S.friends[id]?S.friends[id].name:id);
 const rd=(b,cb)=>{const r=new FileReader();r.onload=()=>cb(r.result);r.readAsDataURL(b)};
 let peer,conns={},cur=null,call=null,ls=null,linked=false;
 
-function setup0(){const n=$('#sn').value.trim(),b=$('#sb').value.trim();if(!n)return toast('Enter a username');if(b.replace(/\D/g,'').length<7)return toast('Enter your burner number');tone(440,.1,'square',.05);tone(880,.25,'square',.05,.1);
+function setup0(){const n=$('#sn').value.trim().replace(/^@/,'');if(!/^[a-zA-Z0-9_]{3,20}$/.test(n))return toast('Use 3–20 letters, numbers or _');tone(440,.1,'square',.05);tone(880,.25,'square',.05,.1);
  S.me={id:'bc'+Math.random().toString(36).slice(2,10),name:n,username:n.toLowerCase(),av:AVSEL,cl:CLSEL};save();boot()}
 function boot(){$('#setup').hidden=!!S.me;$('#home').hidden=!S.me;if(!S.me)return;
  $('#code').textContent=S.me.id;$('#pn').value=S.me.name;AVSEL=S.me.av|0;CLSEL=S.me.cl|0;apUI();start();render()}
@@ -376,7 +376,7 @@ function start(){
 function connect(id){if(!peer||!peer.open||(conns[id]&&conns[id].open))return;setupConn(peer.connect(id,{reliable:true}))}
 function setupConn(c){
  c.on('open',()=>{conns[c.peer]=c;c.send({t:'hi',name:S.me.name,av:S.me.av|0,cl:S.me.cl|0});
-  const f=S.friends[c.peer];if(f&&!f.ok)c.send({t:'req',name:S.me.name,burner:S.me.burner,av:S.me.av|0,cl:S.me.cl|0});flush(c.peer);if(S.dq[c.peer]){c.send({t:'dec'});delete S.dq[c.peer];save()}render()});
+  const f=S.friends[c.peer];if(f&&!f.ok)c.send({t:'req',name:S.me.name,av:S.me.av|0,cl:S.me.cl|0});flush(c.peer);if(S.dq[c.peer]){c.send({t:'dec'});delete S.dq[c.peer];save()}render()});
  c.on('data',d=>recv(c.peer,d));
  c.on('close',()=>{if(conns[c.peer]===c){delete conns[c.peer];render()}});
 }
@@ -386,7 +386,7 @@ function flush(id){const c=conns[id];if(!c)return;let ch=0;
 
 function addId(id){const u=dirList.find(x=>x.id===id);if(!S.friends[id])S.friends[id]={name:u?u.name:id,av:u?u.av:0,cl:u?u.cl|0:0,ok:false};save();connect(id);render();toast('Request sent')}
 function addFriend(){const id=$('#fc').value.trim();if(!/^bc[a-z0-9]{8}$/.test(id)||id===S.me.id)return toast('Invalid code');addId(id);$('#fc').value=''}
-function acc(id){S.friends[id]={name:S.pend[id],ok:true,av:(dirList.find(x=>x.id===id)||{}).av|0,cl:(dirList.find(x=>x.id===id)||{}).cl|0};delete S.pend[id];save();sendTo(id,{t:'acc',name:S.me.name,burner:S.me.burner,av:S.me.av|0,cl:S.me.cl|0});connect(id);render()}
+function acc(id){S.friends[id]={name:S.pend[id],ok:true,av:(dirList.find(x=>x.id===id)||{}).av|0,cl:(dirList.find(x=>x.id===id)||{}).cl|0};delete S.pend[id];save();sendTo(id,{t:'acc',name:S.me.name,av:S.me.av|0,cl:S.me.cl|0});connect(id);render()}
 function dec(id){delete S.pend[id];if(!sendTo(id,{t:'dec'}))S.dq[id]=1;save();render()}
 
 const TYPES=['text','img','gif','file','vm'];
@@ -394,9 +394,9 @@ function recv(id,d){
  if(!d||typeof d!=='object')return;const f=S.friends[id];
  if(d.t==='hi'){if(f&&f.ok){f.name=String(d.name).slice(0,40);f.av=Math.max(0,Math.min(+d.av|0,EM.length-1));f.cl=Math.max(0,Math.min(+d.cl|0,PAL.length-1));save();render()}}
  else if(d.t==='req'){const n=String(d.name).slice(0,40);if(S.dq[id])return;
-  if(f){f.ok=true;f.name=n;f.av=Math.max(0,Math.min(+d.av|0,EM.length-1));f.cl=Math.max(0,Math.min(+d.cl|0,PAL.length-1));sendTo(id,{t:'acc',name:S.me.name,burner:S.me.burner,av:S.me.av|0,cl:S.me.cl|0})}else{S.pend[id]=n;ban(0,'FRIEND REQUEST',n+' wants to connect',()=>tab('reqs'));tone(900,.08,'square',.05);tone(1200,.1,'square',.05,.1)}save();render()}
+  if(f){f.ok=true;f.name=n;f.av=Math.max(0,Math.min(+d.av|0,EM.length-1));f.cl=Math.max(0,Math.min(+d.cl|0,PAL.length-1));sendTo(id,{t:'acc',name:S.me.name,av:S.me.av|0,cl:S.me.cl|0})}else{S.pend[id]=n;ban(0,'FRIEND REQUEST',n+' wants to connect',()=>tab('reqs'));tone(900,.08,'square',.05);tone(1200,.1,'square',.05,.1)}save();render()}
  else if(d.t==='dec'&&f&&!f.ok){ban(f.av,'REQUEST DECLINED',f.name+' declined your request',null,0,f.cl);tone(300,.25,'square',.06);delete S.friends[id];save();render()}
- else if(d.t==='acc'&&f){if(!f.ok){ban(f.av,'REQUEST ACCEPTED',String(d.name).slice(0,40)+' is now your friend',()=>tab('list'),0,f.cl);tone(700,.08,'square',.05);tone(1000,.12,'square',.05,.1)}f.ok=true;f.name=String(d.name).slice(0,40);f.username=String(d.burner||'').slice(0,20);f.av=Math.max(0,Math.min(+d.av|0,EM.length-1));f.cl=Math.max(0,Math.min(+d.cl|0,PAL.length-1));save();render()}
+ else if(d.t==='acc'&&f){if(!f.ok){ban(f.av,'REQUEST ACCEPTED',String(d.name).slice(0,40)+' is now your friend',()=>tab('list'),0,f.cl);tone(700,.08,'square',.05);tone(1000,.12,'square',.05,.1)}f.ok=true;f.name=String(d.name).slice(0,40);f.av=Math.max(0,Math.min(+d.av|0,EM.length-1));f.cl=Math.max(0,Math.min(+d.cl|0,PAL.length-1));save();render()}
  else if(d.t==='m'&&f&&f.ok&&d.m){const m=d.m;
   if(!TYPES.includes(m.type)||(m.data&&!/^(data:|https:\/\/)/.test(m.data))||(m.type==='file'&&m.data&&!m.data.startsWith('data:')))return;
   let k=id;if(m.g){if(!/^g[a-z0-9]+$/.test(m.g))return;
